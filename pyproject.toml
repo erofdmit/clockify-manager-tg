@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "clockify-manager-tg"
+version = "0.1.0"
+description = ""
+authors = ["Dmitry <erofeevdma@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+aiogram = "^3.13.1"
+requests = "^2.32.3"
+sqlalchemy = "^2.0.35"
+apscheduler = "^3.10.4"
+python-dotenv = "^1.0.1"
+
+[tool.poetry.group.dev.dependencies]
+pandas = "^2.2.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

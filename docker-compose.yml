@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    container_name: my_app
+    volumes:
+      - users_data:/app/data
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE=/app/data/users.db
+    command: poetry run python main.py
+    restart: unless-stopped
+
+volumes:
+  users_data:
