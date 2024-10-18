@@ -1,3 +1,4 @@
+import requests
 from aiogram import Router, types
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
@@ -25,6 +26,10 @@ class CreateTimeEntryForm(StatesGroup):
     end_date = State()
     end_time = State()
     confirmation = State()
+
+class StartTimeEntryForm(StatesGroup):
+    project_choice = State()
+    description = State()
 
 # Функция для создания клавиатуры с датами (от сегодня до 5 дней назад)
 def get_date_keyboard():
@@ -167,3 +172,53 @@ async def process_confirmation(message: types.Message, state: FSMContext):
     else:
         await message.answer("Запись времени отменена.")
     await state.clear()
+
+
+# Команда для начала записи времени
+@router.message(Command('start_time_entry'))
+async def cmd_start_time_entry(message: types.Message, state: FSMContext):
+    try:
+        projects = user_manager.get_user_projects(clockify_api, message.from_user.username)
+        if projects:
+            buttons = [[KeyboardButton(text=project)] for project in projects]
+            markup = ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True, one_time_keyboard=True)
+            await message.answer("Выберите проект:", reply_markup=markup)
+            await state.set_state(StartTimeEntryForm.project_choice)
+        else:
+            await message.answer("Проекты не найдены.")
+    except Exception as e:
+        await message.answer(f"Ошибка при получении проектов: {str(e)}")
+
+@router.message(StartTimeEntryForm.project_choice)
+async def process_project_choice_start(message: types.Message, state: FSMContext):
+    await state.update_data(project=message.text)
+    await message.answer("Введите описание:")
+    await state.set_state(StartTimeEntryForm.description)
+
+@router.message(StartTimeEntryForm.description)
+async def process_description_start(message: types.Message, state: FSMContext):
+    user_data = await state.get_data()
+    description = message.text
+    project_name = user_data.get('project')
+
+    # Используем текущее время для начала записи
+    start_time = get_current_time_in_moscow()
+
+    time_entry_manager.start_time_entry(
+        clockify_api, message.from_user.username, project_name, description
+    )
+    await message.answer("Запись времени успешно начата.")
+    await state.clear()
+
+@router.message(Command('end_time_entry'))
+async def cmd_end_time_entry(message: types.Message):
+    try:
+        time_entry_manager.end_time_entry(clockify_api, message.from_user.username)
+        await message.answer("Запись времени успешно завершена.")
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 404:
+            await message.answer("Ошибка: Тайм-запись не найдена.")
+        else:
+            await message.answer(f"Произошла ошибка при завершении записи времени: {e.response.status_code} {e.response.text}")
+    except Exception as e:
+        await message.answer(f"Произошла ошибка: {str(e)}")
