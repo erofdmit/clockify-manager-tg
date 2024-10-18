@@ -60,9 +60,9 @@ def get_end_date_keyboard(start_date):
     else:
         # Добавляем даты от сегодня до даты начала включительно
         start_date_obj = datetime.strptime(start_date, '%Y-%m-%d')
-        days_diff = (start_date_obj - datetime.now()).days
+        days_diff = (datetime.now() - start_date_obj).days
         for i in range(days_diff + 1):
-            date = (datetime.now() + timedelta(days=i)).strftime('%Y-%m-%d')
+            date = (start_date_obj + timedelta(days=i)).strftime('%Y-%m-%d')
             buttons.append([KeyboardButton(text=date)])
     
     return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True, one_time_keyboard=True)
